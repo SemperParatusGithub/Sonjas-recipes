@@ -1,6 +1,6 @@
-// lib/db.ts
 import Database from 'better-sqlite3';
 import path from 'path';
+import { randomBytes, createHash } from 'crypto';
 
 const dbPath = process.env.DATABASE_URL || path.join(process.cwd(), 'data', 'dev.db');
 const db = new Database(dbPath);
@@ -38,7 +38,72 @@ try {
   // Column already exists
 }
 
+// Auth schema
+db.exec(`
+  CREATE TABLE IF NOT EXISTS User (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE NOT NULL,
+    passwordHash TEXT NOT NULL,
+    name TEXT,
+    createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS Session (
+    id TEXT PRIMARY KEY,
+    userId INTEGER NOT NULL,
+    expiresAt TEXT NOT NULL,
+    FOREIGN KEY (userId) REFERENCES User(id) ON DELETE CASCADE
+  )
+`);
+
 export default db;
+
+// --- Auth helpers ---
+
+export function hashPassword(password: string): string {
+  return createHash('sha256').update(password).digest('hex');
+}
+
+export function verifyPassword(password: string, hash: string): boolean {
+  return hashPassword(password) === hash;
+}
+
+export function createSession(userId: number): string {
+  const id = randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days
+  db.prepare('INSERT INTO Session (id, userId, expiresAt) VALUES (?, ?, ?)').run(id, userId, expiresAt);
+  return id;
+}
+
+export function getSession(sessionId: string): { userId: number; email: string } | null {
+  if (!sessionId) return null;
+  const session = db.prepare(
+    `SELECT s.userId, u.email FROM Session s JOIN User u ON u.id = s.userId WHERE s.id = ? AND s.expiresAt > datetime('now')`
+  ).get(sessionId) as { userId: number; email: string } | undefined;
+  return session || null;
+}
+
+export function deleteSession(sessionId: string): void {
+  db.prepare('DELETE FROM Session WHERE id = ?').run(sessionId);
+}
+
+export function createUser(email: string, password: string, name?: string): { id: number } | { error: string } {
+  const existing = db.prepare('SELECT id FROM User WHERE email = ?').get(email);
+  if (existing) {
+    return { error: 'Email already registered' };
+  }
+  const passwordHash = hashPassword(password);
+  const result = db.prepare('INSERT INTO User (email, passwordHash, name) VALUES (?, ?, ?)').run(email, passwordHash, name || null);
+  return { id: Number(result.lastInsertRowid) };
+}
+
+export function getUserByEmail(email: string) {
+  return db.prepare('SELECT * FROM User WHERE email = ?').get(email) as { id: number; email: string; passwordHash: string; name: string } | undefined;
+}
+
+// --- Recipe helpers ---
 
 export interface Recipe {
   id: number;
@@ -67,7 +132,6 @@ export function parseRecipe(row: any): Recipe {
   
   try {
     ingredients = JSON.parse(row.ingredients || '[]');
-    // Support legacy format: flat array of strings
     if (ingredients.length > 0 && typeof ingredients[0] === 'string') {
       ingredients = (ingredients as string[]).map((item: string) => ['', item]);
     }

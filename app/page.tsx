@@ -2,6 +2,7 @@ import Link from 'next/link';
 import db, { parseRecipe } from '@/lib/db';
 import { SearchFilters, ThemeToggle } from '@/components/ClientComponents';
 import { Logo } from '@/components/Logo';
+import { AuthNav } from '@/components/AuthNav';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,6 +43,7 @@ export default async function HomePage(props: { searchParams: Promise<{ q?: stri
             <Link href="/">Startseite</Link>
             <Link href="/add" className="btn btn-primary">Rezept hinzufügen</Link>
             <ThemeToggle />
+            <AuthNav />
           </nav>
         </div>
       </header>

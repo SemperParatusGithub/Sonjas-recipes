@@ -1,6 +1,5 @@
-// app/api/recipes/[slug]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import db, { parseRecipe } from '@/lib/db';
+import db, { parseRecipe, getSession } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
@@ -16,18 +15,83 @@ export async function GET(
   return NextResponse.json(parseRecipe(recipe));
 }
 
-// PATCH - DISABLED FOR NOW
-export async function PATCH(
+export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  return NextResponse.json({ error: 'Editing disabled' }, { status: 403 });
+  const sessionId = request.cookies.get('session')?.value;
+  const session = getSession(sessionId || '');
+
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { slug } = await params;
+
+  try {
+    const body = await request.json();
+    const { title, description, category, difficulty, prepTimeMin, cookTimeMin, servings, ingredients, steps, tags, imageUrl, tips } = body;
+
+    const existing = db.prepare('SELECT * FROM Recipe WHERE slug = ?').get(slug);
+    if (!existing) {
+      return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
+    }
+
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE Recipe SET
+        title = ?, description = ?, category = ?, difficulty = ?,
+        prepTimeMin = ?, cookTimeMin = ?, servings = ?,
+        ingredients = ?, steps = ?, tags = ?, imageUrl = ?, tip = ?, updatedAt = ?
+      WHERE slug = ?
+    `).run(
+      title ?? existing.title,
+      description ?? existing.description,
+      category ?? existing.category,
+      difficulty ?? existing.difficulty,
+      prepTimeMin ?? existing.prepTimeMin,
+      cookTimeMin ?? existing.cookTimeMin,
+      servings ?? existing.servings,
+      JSON.stringify(ingredients ?? JSON.parse((existing as any).ingredients || '[]')),
+      JSON.stringify(steps ?? JSON.parse((existing as any).steps || '[]')),
+      JSON.stringify(tags ?? JSON.parse((existing as any).tags || '[]')),
+      imageUrl ?? existing.imageUrl,
+      tips ?? existing.tip,
+      now,
+      slug
+    );
+
+    const updated = db.prepare('SELECT * FROM Recipe WHERE slug = ?').get(slug);
+    return NextResponse.json(parseRecipe(updated));
+  } catch (err) {
+    console.error('[PUT /api/recipes/[slug]]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }
 
-// DELETE - DISABLED FOR NOW
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  return NextResponse.json({ error: 'Deleting disabled' }, { status: 403 });
+  const sessionId = request.cookies.get('session')?.value;
+  const session = getSession(sessionId || '');
+
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { slug } = await params;
+
+  try {
+    const existing = db.prepare('SELECT * FROM Recipe WHERE slug = ?').get(slug);
+    if (!existing) {
+      return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
+    }
+
+    db.prepare('DELETE FROM Recipe WHERE slug = ?').run(slug);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error('[DELETE /api/recipes/[slug]]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }

@@ -75,6 +75,7 @@ export default function AddRecipePage() {
       const res = await fetch('/api/recipes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           title,
           description,

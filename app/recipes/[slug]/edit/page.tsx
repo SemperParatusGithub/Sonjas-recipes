@@ -125,6 +125,7 @@ export default function EditRecipePage({ params }: { params: Promise<{ slug: str
       const res = await fetch(`/api/recipes/${slug}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           title,
           description,
