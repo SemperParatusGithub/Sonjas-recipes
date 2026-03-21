@@ -126,6 +126,16 @@ export interface Recipe {
   updatedAt: string;
 }
 
+export function getRecipe(slug: string): Recipe | null {
+  const row = db.prepare('SELECT * FROM Recipe WHERE slug = ?').get(slug);
+  return row ? parseRecipe(row) : null;
+}
+
+export function getAllRecipes(): Recipe[] {
+  const rows = db.prepare('SELECT * FROM Recipe ORDER BY id').all();
+  return rows.map(parseRecipe);
+}
+
 export function parseRecipe(row: any): Recipe {
   let ingredients = [];
   let tags = [];
