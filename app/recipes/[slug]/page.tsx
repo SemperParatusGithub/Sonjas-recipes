@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Logo } from '@/components/Logo';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/lib/context';
+import { useSession } from '@/lib/session';
 
 interface Recipe {
   id: number;
@@ -26,6 +27,7 @@ interface Recipe {
 
 export default function RecipeDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { t, lang, setLang, theme, setTheme } = useApp();
+  const { user } = useSession();
   const router = useRouter();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,7 +56,11 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ slug: s
     if (!confirm(t('confirmDelete'))) return;
     
     try {
-      await fetch(`/api/recipes/${slug}`, { method: 'DELETE' });
+      const res = await fetch(`/api/recipes/${slug}`, { method: 'DELETE', credentials: 'include' });
+      if (res.status === 401) {
+        router.push('/login');
+        return;
+      }
       router.push('/');
     } catch (err) {
       alert('Failed to delete recipe');
@@ -210,16 +216,17 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ slug: s
           </div>
         )}
 
-        {/* Actions - DISABLED FOR NOW
-        <div className="recipe-actions">
-          <Link href={`/recipes/${recipe.slug}/edit`} className="btn btn-secondary">
-            ✏️ {t('edit')}
-          </Link>
-          <button onClick={handleDelete} className="btn btn-danger">
-            🗑️ {t('delete')}
-          </button>
-        </div>
-        */}
+        {/* Actions */}
+        {user && (
+          <div className="recipe-actions">
+            <Link href={`/recipes/${recipe.slug}/edit`} className="btn btn-secondary">
+              ✏️ Bearbeiten
+            </Link>
+            <button onClick={handleDelete} className="btn btn-danger">
+              🗑️ Löschen
+            </button>
+          </div>
+        )}
       </main>
     </>
   );

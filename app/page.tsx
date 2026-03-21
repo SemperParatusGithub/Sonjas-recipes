@@ -3,6 +3,7 @@ import db, { parseRecipe } from '@/lib/db';
 import { SearchFilters, ThemeToggle } from '@/components/ClientComponents';
 import { Logo } from '@/components/Logo';
 import { AuthNav } from '@/components/AuthNav';
+import { AddRecipeButton } from '@/components/AddRecipeButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,7 +42,7 @@ export default async function HomePage(props: { searchParams: Promise<{ q?: stri
           <Logo />
           <nav className="nav">
             <Link href="/">Startseite</Link>
-            <Link href="/add" className="btn btn-primary">Rezept hinzufügen</Link>
+            <AddRecipeButton />
             <ThemeToggle />
             <AuthNav />
           </nav>

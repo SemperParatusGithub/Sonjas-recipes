@@ -1,7 +1,7 @@
-// app/layout.tsx
 import type { Metadata } from 'next';
 import './globals.css';
 import { AppProvider } from '@/lib/context';
+import { SessionProvider } from '@/lib/session';
 
 export const metadata: Metadata = {
   title: 'Recipe App',
@@ -30,9 +30,11 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <AppProvider>
-          {children}
-        </AppProvider>
+        <SessionProvider>
+          <AppProvider>
+            {children}
+          </AppProvider>
+        </SessionProvider>
       </body>
     </html>
   );
