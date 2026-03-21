@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     }
 
     const user = getUserByEmail(email);
-    if (!user || !verifyPassword(password, user.passwordHash)) {
+    if (!user || !(await verifyPassword(password, user.passwordHash))) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 

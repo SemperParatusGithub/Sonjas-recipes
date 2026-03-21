@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
-import { randomBytes, createHash } from 'crypto';
+import { randomBytes } from 'crypto';
+import bcrypt from 'bcryptjs';
 
 const dbPath = process.env.DATABASE_URL || path.join(process.cwd(), 'data', 'dev.db');
 const db = new Database(dbPath);
@@ -62,12 +63,12 @@ export default db;
 
 // --- Auth helpers ---
 
-export function hashPassword(password: string): string {
-  return createHash('sha256').update(password).digest('hex');
+export async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, 10);
 }
 
-export function verifyPassword(password: string, hash: string): boolean {
-  return hashPassword(password) === hash;
+export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(password, hash);
 }
 
 export function createSession(userId: number): string {
@@ -89,12 +90,12 @@ export function deleteSession(sessionId: string): void {
   db.prepare('DELETE FROM Session WHERE id = ?').run(sessionId);
 }
 
-export function createUser(email: string, password: string, name?: string): { id: number } | { error: string } {
+export async function createUser(email: string, password: string, name?: string): Promise<{ id: number } | { error: string }> {
   const existing = db.prepare('SELECT id FROM User WHERE email = ?').get(email);
   if (existing) {
     return { error: 'Email already registered' };
   }
-  const passwordHash = hashPassword(password);
+  const passwordHash = await hashPassword(password);
   const result = db.prepare('INSERT INTO User (email, passwordHash, name) VALUES (?, ?, ?)').run(email, passwordHash, name || null);
   return { id: Number(result.lastInsertRowid) };
 }
