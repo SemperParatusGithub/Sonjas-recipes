@@ -1,0 +1,58 @@
+# =============================================================================
+# TRAEFIK STATIC CONFIGURATION
+# =============================================================================
+
+global:
+  checkNewVersion: true
+  sendAnonymousUsage: false
+
+# Log settings
+log:
+  level: INFO
+  format: json
+  filePath: /var/log/traefik/traefik.json
+
+# API Dashboard
+api:
+  dashboard: true
+
+# Entry points
+entryPoints:
+  web:
+    address: ":80"
+
+  websecure:
+    address: ":443"
+
+# Docker provider
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: web
+    watch: true
+
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+# Let's Encrypt (Production)
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: admin@sonjas-recipes.com
+      storage: /letsencrypt/acme.json
+      httpChallenge:
+        entryPoint: web
+      tlsChallenge: true
+
+# Enable TLS by default
+tls:
+  stores:
+    default:
+      defaultGeneratedCert:
+        resolver: letsencrypt
+
+# Ping
+ping:
+  entryPoint: web

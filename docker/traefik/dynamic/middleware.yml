@@ -1,0 +1,31 @@
+# Traefik config - recipe app is main site
+http:
+  services:
+    recipe-app:
+      loadBalancer:
+        servers:
+          - url: "http://recipe-app:3000"
+
+  routers:
+    # Main site - recipe app
+    main-http:
+      rule: "Host(`sonjas-recipes.com`)"
+      service: recipe-app
+      entryPoints:
+        - web
+
+    main-https:
+      rule: "Host(`sonjas-recipes.com`)"
+      service: recipe-app
+      entryPoints:
+        - websecure
+      tls: {}
+
+tls:
+  certificates:
+    - certFile: /certs/origin-cert.pem
+      keyFile: /certs/origin-key.pem
+
+  options:
+    default:
+      minVersion: VersionTLS12

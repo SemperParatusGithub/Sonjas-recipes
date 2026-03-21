@@ -10,7 +10,7 @@ A modern, responsive recipe management web application built with Next.js, React
 - ✏️ **Edit Recipes** - Update existing recipes
 - 🌙 **Dark Mode** - Toggle between light and dark themes
 - 📱 **Responsive** - Works on desktop, tablet, and mobile
-- 🐳 **Docker Support** - Containerized deployment ready
+- 🐳 **Docker Support** - Containerized deployment with Traefik
 
 ## Tech Stack
 
@@ -18,19 +18,20 @@ A modern, responsive recipe management web application built with Next.js, React
 - **Language:** TypeScript
 - **Styling:** CSS Variables + Custom CSS
 - **Database:** SQLite with [better-sqlite3](https://github.com/WiseLibs/better-sqlite3)
+- **Proxy:** Traefik v3
 - **Runtime:** Node.js 22
 
 ## Project Structure
 
 ```
-recipe-app/
-├── app/                    # Next.js App Router
-│   ├── api/               # API Routes
-│   │   └── recipes/       # Recipe CRUD endpoints
+recipe-website/            # Monorepo root
+├── app/                   # Next.js App Router
+│   ├── api/
+│   │   └── recipes/      # Recipe CRUD API endpoints
 │   ├── add/               # Add recipe page
-│   ├── recipes/           # Recipe detail & edit pages
-│   │   ├── [slug]/        # Dynamic route for recipe details
-│   │   └── [slug]/edit/   # Edit recipe page
+│   ├── recipes/
+│   │   ├── [slug]/       # Recipe detail page
+│   │   └── [slug]/edit/  # Edit recipe page
 │   ├── globals.css        # Global styles + theme variables
 │   ├── layout.tsx         # Root layout with theme provider
 │   └── page.tsx           # Home page (recipe grid)
@@ -41,63 +42,74 @@ recipe-app/
 │   ├── context.tsx        # App context for theme
 │   ├── db.ts             # Database connection & helpers
 │   └── translations.ts   # German UI strings
-├── data/                  # SQLite database files
+├── data/                  # SQLite database files (gitignored)
 ├── public/                # Static assets
-├── Dockerfile            # Production Docker build
-├── next.config.ts        # Next.js configuration
-└── tsconfig.json         # TypeScript configuration
+├── docker/                # Docker/Traefik production setup
+│   ├── docker-compose.yml # Full stack: app + traefik + landing
+│   ├── .env.template      # Environment template
+│   ├── traefik/           # Traefik config (SSL, routing, etc.)
+│   └── landing/           # Static landing page
+├── Dockerfile             # App-only production build
+├── next.config.ts         # Next.js configuration
+├── package.json           # Dependencies
+└── tsconfig.json          # TypeScript configuration
 ```
 
-## Getting Started
+## Quick Start
 
-### Prerequisites
+### Local Development
 
-- Node.js 22 or later
-- npm
-
-### Installation
-
-1. Clone the repository:
 ```bash
-git clone git@github.com:nilsdev-agent/recipe-website.git
-cd recipe-website/recipe-app
-```
+# Clone the repo
+git clone git@github.com:nilsdev-agent/recipe-app.git
+cd recipe-app
 
-2. Install dependencies:
-```bash
+# Install dependencies
 npm install
-```
 
-3. Start the development server:
-```bash
+# Start dev server
 npm run dev
+
+# Open http://localhost:3000
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### Building for Production
+### Docker (Full Stack)
 
 ```bash
-npm run build
-npm start
+# Configure environment
+cd docker
+cp .env.template .env
+# Edit .env and set DOMAIN
+
+# Start all services (Traefik + App + Landing)
+docker-compose up -d
+
+# Check status
+docker-compose ps
 ```
 
 ## Docker Deployment
 
-Build and run with Docker:
+The project includes a production-ready Docker setup with Traefik reverse proxy.
+
+### Single Container
 
 ```bash
-# Build the image
 docker build -t recipe-app .
-
-# Run the container
-docker run -p 3000:3000 recipe-app
+docker run -p 3000:3000 -v ./data:/data recipe-app
 ```
 
-The app uses a multi-stage Docker build with:
-- Stage 1: Install dependencies
-- Stage 2: Build the application
-- Stage 3: Production runner (non-root user)
+### Full Stack (recommended for production)
+
+See [`docker/README.md`](docker/README.md) for detailed deployment instructions.
+
+### What's in the Full Stack
+
+| Service | Description | Port |
+|---------|-------------|------|
+| Traefik | Reverse proxy, SSL, rate limiting | 80, 443 |
+| recipe-app | Next.js application | 3000 (internal) |
+| landing | Static landing page | 8080 (internal) |
 
 ## Database Schema
 
@@ -134,8 +146,8 @@ The app uses SQLite with the following Recipe model:
 
 - The app uses German as the interface language
 - Theme preference is persisted in localStorage
-- Database is file-based (SQLite) - no external DB server needed
-- Images are stored as URLs (external) - not uploaded to the server
+- Database is file-based (SQLite) — no external DB server needed
+- Images are stored as URLs (external) — not uploaded to the server
 
 ## License
 

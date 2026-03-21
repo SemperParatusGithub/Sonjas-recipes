@@ -1,0 +1,122 @@
+version: '3.9'
+
+services:
+  traefik:
+    image: traefik:v3.1
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    networks:
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/acme.json:/letsencrypt/acme.json:rw
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+      - ./traefik/logs:/var/log/traefik
+    environment:
+      - TZ=Europe/Berlin
+    env_file:
+      - .env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls=true"
+      - "traefik.http.routers.dashboard.middlewares=dashboard-auth"
+      - "traefik.http.middlewares.dashboard-auth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH}"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  recipe-app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: recipe-app
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    networks:
+      - web
+    volumes:
+      - /root/.openclaw/workspace/data:/data
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=/data/dev.db
+      - HOSTNAME=0.0.0.0
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1:3000/api/recipes"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.recipe-app.rule=Host(`${RECIPES_DOMAIN}`) || Host(`www.${RECIPES_DOMAIN}`)"
+      - "traefik.http.routers.recipe-app.entrypoints=websecure"
+      - "traefik.http.routers.recipe-app.tls=true"
+      - "traefik.http.routers.recipe-app.tls.certResolver=letsencrypt"
+      - "traefik.http.routers.recipe-app.middlewares=recipe-security-headers,recipe-ratelimit"
+      - "traefik.http.middlewares.recipe-security-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.middlewares.recipe-ratelimit.ratelimit.average=100"
+      - "traefik.http.middlewares.recipe-ratelimit.ratelimit.burst=50"
+      - "traefik.http.middlewares.recipe-ratelimit.ratelimit.period=1s"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  landing-site:
+    image: nginx:alpine
+    container_name: landing-site
+    restart: unless-stopped
+    networks:
+      - web
+    volumes:
+      - ./landing/html:/usr/share/nginx/html:ro
+      - ./landing/nginx.conf:/etc/nginx/nginx.conf:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1:80/index.html"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.landing.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.landing.entrypoints=websecure"
+      - "traefik.http.routers.landing.tls=true"
+      - "traefik.http.routers.landing.middlewares=landing-security-headers,landing-ratelimit"
+      - "traefik.http.middlewares.landing-security-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.middlewares.landing-ratelimit.ratelimit.average=50"
+      - "traefik.http.middlewares.landing-ratelimit.ratelimit.burst=25"
+      - "traefik.http.middlewares.landing-ratelimit.ratelimit.period=1s"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  web:
+    driver: bridge
+    name: web
