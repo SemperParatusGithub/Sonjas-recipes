@@ -31,6 +31,7 @@ export default function EditRecipePage({ params }: { params: Promise<{ slug: str
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [slug, setSlug] = useState('');
+  const [authChecked, setAuthChecked] = useState(false);
   
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -47,7 +48,22 @@ export default function EditRecipePage({ params }: { params: Promise<{ slug: str
   const [steps, setSteps] = useState<string[]>(['']);
   const [tip, setTip] = useState('');
 
+  // Auth check on mount
   useEffect(() => {
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data?.user) {
+          router.replace('/login?redirect=/recipes/' + slug + '/edit');
+        } else {
+          setAuthChecked(true);
+        }
+      })
+      .catch(() => router.replace('/login'));
+  }, [router, slug]);
+
+  useEffect(() => {
+    if (!authChecked) return;
     params.then(async (p) => {
       setSlug(p.slug);
       try {
@@ -75,7 +91,7 @@ export default function EditRecipePage({ params }: { params: Promise<{ slug: str
       }
       setLoading(false);
     });
-  }, [params, t]);
+  }, [params, t, authChecked]);
 
   function addTag() {
     if (tagInput.trim() && !tags.includes(tagInput.trim()) && tags.length < 20) {
@@ -155,6 +171,7 @@ export default function EditRecipePage({ params }: { params: Promise<{ slug: str
     setSaving(false);
   }
 
+  if (!authChecked) return <div className="loading">Loading...</div>;
   if (loading) return <div className="loading">Loading...</div>;
   if (error && !title) return (
     <div className="not-found">
