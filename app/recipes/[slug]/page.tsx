@@ -6,6 +6,7 @@ import { Logo } from '@/components/Logo';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/lib/context';
 import { useSession } from '@/lib/session';
+import { AuthNav } from '@/components/AuthNav';
 
 interface Recipe {
   id: number;
@@ -98,18 +99,7 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ slug: s
           <Logo />
           <nav className="nav">
             <Link href="/">{t('home')}</Link>
-            <button 
-              className="language-toggle" 
-              onClick={() => setLang(lang === 'de' ? 'en' : 'de')}
-            >
-              {lang === 'de' ? 'EN' : 'DE'}
-            </button>
-            <button 
-              className="theme-toggle"
-              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-            >
-              {theme === 'light' ? '🌙' : '☀️'}
-            </button>
+            <AuthNav />
           </nav>
         </div>
       </header>
