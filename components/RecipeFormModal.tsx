@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import type { Recipe, Ingredient } from '@/lib/db';
 import { sanitize } from '@/lib/sanitize';
+import { ImageCropModal } from './ImageCropModal';
 
 interface RecipeFormModalProps {
   recipe?: Recipe;
@@ -41,6 +42,9 @@ export function RecipeFormModal({ recipe, onClose, onSave, loading }: RecipeForm
   const [servings, setServings] = useState(String(recipe?.portions || ''));
   const [description, setDescription] = useState(recipe?.description || '');
   const [imageUrl, setImageUrl] = useState(recipe?.imageUrl || '');
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [ingredients, setIngredients] = useState<FormIngredient[]>(
     recipe?.ingredients?.length
       ? recipe.ingredients.map(i => ({ amount: i.amount, unit: i.unit, name: i.name }))
@@ -224,15 +228,78 @@ export function RecipeFormModal({ recipe, onClose, onSave, loading }: RecipeForm
             />
           </div>
 
-          {/* Image URL */}
+          {/* Image */}
           <div style={{ marginBottom: '28px' }}>
-            <label style={labelStyle}>Image URL</label>
+            <label style={labelStyle}>Image</label>
+
+            {/* Preview */}
+            {imageUrl && (
+              <div style={{ marginBottom: '10px', position: 'relative', width: '100%', height: '160px', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border)' }}>
+                <img src={imageUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <button
+                  type="button"
+                  onClick={() => setImageUrl('')}
+                  style={{
+                    position: 'absolute', top: '8px', right: '8px',
+                    width: '28px', height: '28px', borderRadius: '50%',
+                    background: 'rgba(20,10,5,0.6)', border: 'none',
+                    color: 'white', fontSize: '1rem', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >×</button>
+              </div>
+            )}
+
+            {/* Upload button */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                style={{
+                  flex: 1,
+                  padding: '11px 16px',
+                  borderRadius: '10px',
+                  border: '1px dashed var(--terra)',
+                  background: 'var(--terra-light)',
+                  color: 'var(--terra)',
+                  fontSize: '0.85rem',
+                  fontWeight: 500,
+                  cursor: uploading ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  transition: 'all 0.15s',
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                {uploading ? 'Uploading…' : 'Upload from device'}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture={undefined}
+                style={{ display: 'none' }}
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const objectUrl = URL.createObjectURL(file);
+                  setCropSrc(objectUrl);
+                  e.target.value = '';
+                }}
+              />
+            </div>
+
+            {/* URL input */}
             <input
               type="url"
               value={imageUrl}
               onChange={e => setImageUrl(e.target.value)}
-              style={inputStyle}
-              placeholder="https://…"
+              style={{ ...inputStyle, fontSize: '0.85rem' }}
+              placeholder="…or paste an image URL"
               onFocus={e => { e.target.style.borderColor = 'var(--terra)'; }}
               onBlur={e => { e.target.style.borderColor = 'var(--border)'; }}
             />
@@ -393,6 +460,28 @@ export function RecipeFormModal({ recipe, onClose, onSave, loading }: RecipeForm
             />
           </div>
         </form>
+
+        {/* Crop modal — rendered inside the outer modal so z-index stacks correctly */}
+        {cropSrc && (
+          <ImageCropModal
+            src={cropSrc}
+            onCancel={() => { URL.revokeObjectURL(cropSrc); setCropSrc(null); }}
+            onApply={async (blob) => {
+              URL.revokeObjectURL(cropSrc);
+              setCropSrc(null);
+              setUploading(true);
+              try {
+                const fd = new FormData();
+                fd.append('file', blob, 'recipe-image.jpg');
+                const res = await fetch('/api/upload', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.url) setImageUrl(data.url);
+              } finally {
+                setUploading(false);
+              }
+            }}
+          />
+        )}
 
         {/* Footer */}
         <div style={{

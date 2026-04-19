@@ -12,6 +12,9 @@ dist/
 .env.local
 .env.*.local
 
+# Uploaded images
+public/uploads/
+
 # Database
 *.db
 *.db-journal
