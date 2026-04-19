@@ -130,27 +130,20 @@ export function RecipeFormModal({ recipe, onClose, onSave, loading }: RecipeForm
   return (
     <div
       onClick={onClose}
+      className="modal-backdrop"
       style={{
-        position: 'fixed',
-        inset: 0,
         background: 'rgba(20,10,5,0.6)',
         backdropFilter: 'blur(6px)',
         zIndex: 300,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px',
-        animation: 'fadeIn 0.4s ease',
       }}
     >
       <div
         onClick={e => e.stopPropagation()}
+        className="modal-sheet"
         style={{
           background: 'var(--cream)',
-          borderRadius: '24px',
           maxWidth: '720px',
           width: '100%',
-          maxHeight: '92vh',
           display: 'flex',
           flexDirection: 'column',
           animation: 'fadeUp 0.4s ease',
@@ -180,7 +173,7 @@ export function RecipeFormModal({ recipe, onClose, onSave, loading }: RecipeForm
           </div>
 
           {/* Category + Difficulty */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+          <div className="form-two-col">
             <div>
               <label style={labelStyle}>Category *</label>
               <select value={category} onChange={e => setCategory(e.target.value as Recipe['category'])} style={{ ...inputStyle, cursor: 'pointer' }}>
@@ -197,7 +190,7 @@ export function RecipeFormModal({ recipe, onClose, onSave, loading }: RecipeForm
           </div>
 
           {/* Times + Servings */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+          <div className="form-three-col">
             <div>
               <label style={labelStyle}>Prep time (min)</label>
               <input type="number" min="0" value={prepTime} onChange={e => setPrepTime(e.target.value)} style={inputStyle}
@@ -308,7 +301,7 @@ export function RecipeFormModal({ recipe, onClose, onSave, loading }: RecipeForm
           {/* Ingredients */}
           <div style={{ marginBottom: '28px' }}>
             <label style={labelStyle}>Ingredients *</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '80px 90px 1fr 32px', gap: '6px', marginBottom: '6px' }}>
+            <div className="ing-form-grid" style={{ marginBottom: '6px' }}>
               {['Amount', 'Unit', 'Name', ''].map((h, i) => (
                 <span key={i} style={{ fontSize: '0.7rem', fontWeight: 500, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', padding: '0 4px' }}>
                   {h}
@@ -317,7 +310,7 @@ export function RecipeFormModal({ recipe, onClose, onSave, loading }: RecipeForm
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {ingredients.map((ing, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '80px 90px 1fr 32px', gap: '6px' }}>
+                <div key={i} className="ing-form-grid">
                   <input value={ing.amount} onChange={e => updateIngredient(i, 'amount', e.target.value)} placeholder="200" style={{ ...inputStyle, padding: '10px 12px' }}
                     onFocus={e => { e.target.style.borderColor = 'var(--terra)'; }} onBlur={e => { e.target.style.borderColor = 'var(--border)'; }} />
                   <input value={ing.unit} onChange={e => updateIngredient(i, 'unit', e.target.value)} placeholder="g" style={{ ...inputStyle, padding: '10px 12px' }}

@@ -111,17 +111,17 @@ export default function RecipesPage() {
       <Nav onSignInClick={() => setShowSignIn(true)} />
 
       <div style={{ paddingTop: '80px' }}>
-        {/* Header area */}
-        <div style={{ padding: '60px 80px 40px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '40px' }}>
+        {/* Header */}
+        <div className="page-header">
+          <div className="page-header-row">
             <div>
-              <div style={{ fontSize: '0.72rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: 'var(--terra)', marginBottom: '10px' }}>All Recipes</div>
-              <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, fontSize: 'clamp(2.5rem, 4vw, 4rem)', color: 'var(--espresso)', lineHeight: 1.05 }}>The Full Collection</h1>
+              <div style={{ fontSize: '0.72rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--terra)', marginBottom: '10px' }}>All Recipes</div>
+              <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 4rem)', color: 'var(--espresso)', lineHeight: 1.05 }}>The Full Collection</h1>
             </div>
             {isAuthenticated && (
               <button
                 onClick={() => setEditRecipe('new')}
-                style={{ background: 'var(--terra)', color: 'white', borderRadius: '99px', padding: '12px 28px', fontSize: '0.85rem', fontWeight: 500, border: 'none', cursor: 'pointer', textTransform: 'uppercase' as const, letterSpacing: '0.06em', transition: 'background 0.2s' }}
+                style={{ background: 'var(--terra)', color: 'white', borderRadius: '99px', padding: '12px 28px', fontSize: '0.85rem', fontWeight: 500, border: 'none', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.06em', transition: 'background 0.2s', whiteSpace: 'nowrap' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--espresso)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--terra)'; }}
               >
@@ -131,8 +131,8 @@ export default function RecipesPage() {
           </div>
 
           {/* Search + filters */}
-          <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' as const }}>
-            <div style={{ position: 'relative', flex: 1, maxWidth: '380px' }}>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', flex: 1, minWidth: '200px', maxWidth: '380px' }}>
               <svg
                 style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }}
                 width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
@@ -159,14 +159,14 @@ export default function RecipesPage() {
                 onBlur={e => { e.target.style.borderColor = 'var(--border)'; }}
               />
             </div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' as const }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {FILTERS.map(f => (
                 <button
                   key={f}
                   onClick={() => setActiveFilter(f)}
                   style={{
                     borderRadius: '99px',
-                    padding: '8px 18px',
+                    padding: '10px 18px',
                     fontSize: '0.8rem',
                     fontWeight: 500,
                     border: activeFilter === f ? 'none' : '1px solid var(--border)',
@@ -174,6 +174,7 @@ export default function RecipesPage() {
                     color: activeFilter === f ? 'var(--cream)' : 'var(--text-muted)',
                     cursor: 'pointer',
                     transition: 'all 0.15s',
+                    minHeight: '44px',
                   }}
                 >
                   {f}
@@ -184,12 +185,12 @@ export default function RecipesPage() {
         </div>
 
         {/* Recipe grid */}
-        <div style={{ padding: '20px 80px 80px' }}>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '28px' }}>
+        <div className="recipe-grid-pad">
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
             {filtered.length} recipe{filtered.length !== 1 ? 's' : ''}
           </p>
           {filtered.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+            <div className="recipe-grid">
               {filtered.map(recipe => (
                 <RecipeCard
                   key={recipe.id}
@@ -201,7 +202,7 @@ export default function RecipesPage() {
               ))}
             </div>
           ) : (
-            <div style={{ textAlign: 'center' as const, padding: '60px 0', color: 'var(--text-muted)' }}>
+            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
               <p style={{ fontSize: '1.1rem' }}>No recipes found.</p>
               {search && <p style={{ fontSize: '0.85rem', marginTop: '8px' }}>Try a different search term.</p>}
             </div>

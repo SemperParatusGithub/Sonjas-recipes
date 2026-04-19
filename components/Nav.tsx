@@ -20,6 +20,8 @@ export function Nav({ onSignInClick }: NavProps) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  const hPad = 'clamp(20px, 5vw, 48px)';
+
   return (
     <nav style={{
       position: 'fixed',
@@ -30,7 +32,7 @@ export function Nav({ onSignInClick }: NavProps) {
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      padding: scrolled ? '14px 48px' : '24px 48px',
+      padding: scrolled ? `14px ${hPad}` : `24px ${hPad}`,
       background: scrolled ? 'rgba(250,246,240,0.95)' : 'transparent',
       backdropFilter: scrolled ? 'blur(12px)' : 'none',
       borderBottom: scrolled ? '1px solid var(--border)' : 'none',
@@ -39,14 +41,15 @@ export function Nav({ onSignInClick }: NavProps) {
       <Link href="/" style={{
         fontFamily: "'Cormorant Garamond', serif",
         fontWeight: 300,
-        fontSize: '1.6rem',
+        fontSize: 'clamp(1.2rem, 4vw, 1.6rem)',
         color: 'var(--espresso)',
         letterSpacing: '-0.01em',
+        flexShrink: 0,
       }}>
         Sonja&#39;s Kitchen
       </Link>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
+      <div className="nav-links">
         <Link href="/" style={{
           fontFamily: "'DM Sans', sans-serif",
           fontWeight: 500,
@@ -56,6 +59,7 @@ export function Nav({ onSignInClick }: NavProps) {
           color: pathname === '/' ? 'var(--terra)' : 'var(--text-muted)',
           borderBottom: pathname === '/' ? '1px solid var(--terra)' : 'none',
           paddingBottom: '2px',
+          whiteSpace: 'nowrap',
         }}>
           Home
         </Link>
@@ -68,6 +72,7 @@ export function Nav({ onSignInClick }: NavProps) {
           color: pathname === '/recipes' ? 'var(--terra)' : 'var(--text-muted)',
           borderBottom: pathname === '/recipes' ? '1px solid var(--terra)' : 'none',
           paddingBottom: '2px',
+          whiteSpace: 'nowrap',
         }}>
           Recipes
         </Link>
@@ -78,12 +83,13 @@ export function Nav({ onSignInClick }: NavProps) {
             style={{
               border: '1px solid var(--border)',
               borderRadius: '99px',
-              padding: '8px 20px',
+              padding: '8px 16px',
               fontSize: '0.85rem',
               fontWeight: 500,
               color: 'var(--text-muted)',
               background: 'transparent',
               transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
             }}
             onMouseEnter={e => {
               (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--terra)';
@@ -103,11 +109,12 @@ export function Nav({ onSignInClick }: NavProps) {
               background: 'var(--espresso)',
               color: 'var(--cream)',
               borderRadius: '99px',
-              padding: '10px 24px',
+              padding: '10px 20px',
               fontSize: '0.85rem',
               fontWeight: 500,
               border: 'none',
               transition: 'background 0.2s',
+              whiteSpace: 'nowrap',
             }}
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--terra)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--espresso)'; }}

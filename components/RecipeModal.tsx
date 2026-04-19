@@ -30,27 +30,19 @@ export function RecipeModal({ recipe, onClose, onEdit, onDelete }: RecipeModalPr
   return (
     <div
       onClick={onClose}
+      className="modal-backdrop"
       style={{
-        position: 'fixed',
-        inset: 0,
         background: 'rgba(20,10,5,0.6)',
         backdropFilter: 'blur(6px)',
-        zIndex: 200,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px',
-        animation: 'fadeIn 0.4s ease',
       }}
     >
       <div
         onClick={e => e.stopPropagation()}
+        className="modal-sheet"
         style={{
           background: 'var(--cream)',
-          borderRadius: '24px',
           maxWidth: '820px',
           width: '100%',
-          maxHeight: '90vh',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
@@ -94,7 +86,7 @@ export function RecipeModal({ recipe, onClose, onEdit, onDelete }: RecipeModalPr
         </div>
 
         {/* Scrollable content */}
-        <div style={{ padding: '28px 36px 40px', overflowY: 'auto', flex: 1 }}>
+        <div className="modal-content-pad">
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
             <h2 style={{
@@ -181,7 +173,7 @@ export function RecipeModal({ recipe, onClose, onEdit, onDelete }: RecipeModalPr
           )}
 
           {/* Ingredients + Steps */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: '32px', marginBottom: '28px' }}>
+          <div className="ingredients-steps-grid">
             {/* Ingredients */}
             <div>
               <h4 style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '16px' }}>
