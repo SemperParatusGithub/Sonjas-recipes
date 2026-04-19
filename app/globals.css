@@ -76,6 +76,11 @@ img {
   to   { opacity: 1; }
 }
 
+@keyframes pulse {
+  0%, 100% { opacity: 0.25; transform: scale(0.8); }
+  50%       { opacity: 1;    transform: scale(1.2); }
+}
+
 /* ── Responsive layout classes ────────────────────────────────── */
 
 .hero-grid {

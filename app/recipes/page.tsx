@@ -28,6 +28,7 @@ const FILTER_TO_VALUE: Record<string, string> = {
 
 export default function RecipesPage() {
   const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
+  const [recipesLoading, setRecipesLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -40,8 +41,13 @@ export default function RecipesPage() {
   const [toast, setToast] = useState('');
 
   const fetchRecipes = useCallback(async () => {
-    const res = await fetch('/api/recipes');
-    if (res.ok) setAllRecipes(await res.json());
+    setRecipesLoading(true);
+    try {
+      const res = await fetch('/api/recipes');
+      if (res.ok) setAllRecipes(await res.json());
+    } finally {
+      setRecipesLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchRecipes(); }, [fetchRecipes]);
@@ -189,7 +195,13 @@ export default function RecipesPage() {
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
             {filtered.length} recipe{filtered.length !== 1 ? 's' : ''}
           </p>
-          {filtered.length > 0 ? (
+          {recipesLoading ? (
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', padding: '60px 0' }}>
+              {[0, 1, 2].map(i => (
+                <div key={i} style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--terra)', animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+              ))}
+            </div>
+          ) : filtered.length > 0 ? (
             <div className="recipe-grid">
               {filtered.map(recipe => (
                 <RecipeCard

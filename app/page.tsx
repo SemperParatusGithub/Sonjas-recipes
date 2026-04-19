@@ -15,6 +15,7 @@ import { useAuth } from '@/lib/auth-context';
 export default function HomePage() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [recipeCount, setRecipeCount] = useState(0);
+  const [recipesLoading, setRecipesLoading] = useState(true);
   const { loading: authLoading } = useAuth();
   const [showSignIn, setShowSignIn] = useState(false);
   const [viewRecipe, setViewRecipe] = useState<Recipe | null>(null);
@@ -25,11 +26,16 @@ export default function HomePage() {
   const [toast, setToast] = useState('');
 
   const fetchRecipes = useCallback(async () => {
-    const res = await fetch('/api/recipes');
-    if (res.ok) {
-      const data: Recipe[] = await res.json();
-      setRecipeCount(data.length);
-      setRecipes(data.slice(0, 3));
+    setRecipesLoading(true);
+    try {
+      const res = await fetch('/api/recipes');
+      if (res.ok) {
+        const data: Recipe[] = await res.json();
+        setRecipeCount(data.length);
+        setRecipes(data.slice(0, 3));
+      }
+    } finally {
+      setRecipesLoading(false);
     }
   }, []);
 
@@ -124,7 +130,13 @@ export default function HomePage() {
             All Recipes →
           </Link>
         </div>
-        {recipes.length > 0 ? (
+        {recipesLoading ? (
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', padding: '40px 0' }}>
+            {[0, 1, 2].map(i => (
+              <div key={i} style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--terra)', animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+            ))}
+          </div>
+        ) : recipes.length > 0 ? (
           <div className="recipe-grid">
             {recipes.map((recipe, i) => (
               <div key={recipe.id} style={{ animation: 'fadeUp 0.6s ease ' + (0.2 + i * 0.1) + 's both' }}>
