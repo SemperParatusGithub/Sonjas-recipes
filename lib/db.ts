@@ -103,11 +103,8 @@ db.exec(`
 
 // Seed default user on startup (async fire-and-forget)
 async function seedDefaultUser() {
-  const existing = db.prepare('SELECT id FROM User WHERE email = ?').get('sonja');
-  if (!existing) {
-    const hash = await bcrypt.hash('kitchen', 10);
-    db.prepare('INSERT INTO User (email, passwordHash, name) VALUES (?, ?, ?)').run('sonja', hash, 'Sonja');
-  }
+  const hash = await bcrypt.hash('kitchen', 10);
+  db.prepare('INSERT OR IGNORE INTO User (email, passwordHash, name) VALUES (?, ?, ?)').run('sonja', hash, 'Sonja');
 }
 seedDefaultUser().catch(console.error);
 
