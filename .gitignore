@@ -15,7 +15,9 @@ dist/
 # Database
 *.db
 *.db-journal
-data/recipes.db
+*.db-shm
+*.db-wal
+data/
 
 # Debug
 npm-debug.log*

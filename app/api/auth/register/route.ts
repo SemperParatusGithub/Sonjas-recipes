@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
     }
 
-    const result = createUser(email, password, name);
+    const result = await createUser(email, password, name);
 
     if ('error' in result) {
       return NextResponse.json({ error: result.error }, { status: 409 });
