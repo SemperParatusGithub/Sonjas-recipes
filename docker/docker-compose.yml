@@ -1,14 +1,18 @@
-version: '3.9'
-
 services:
   traefik:
     image: traefik:v3.1
     container_name: traefik
     restart: unless-stopped
+    # Pass ACME email at runtime so it stays out of the committed config file
+    command:
+      - "--configFile=/etc/traefik/traefik.yml"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    cap_add:
+      - NET_BIND_SERVICE
     networks:
       - web
     ports:
@@ -17,23 +21,22 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
-      - ./traefik/acme.json:/letsencrypt/acme.json:rw
       - ./traefik/dynamic:/etc/traefik/dynamic:ro
-      - ./traefik/logs:/var/log/traefik
+      - traefik-acme:/letsencrypt
+      - traefik-logs:/var/log/traefik
     environment:
       - TZ=Europe/Berlin
-    env_file:
-      - .env
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dashboard.rule=Host(`traefik.localhost`)"
+      # Dashboard — only reachable over HTTPS on the traefik subdomain
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN}`)"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.entrypoints=websecure"
-      - "traefik.http.routers.dashboard.tls=true"
-      - "traefik.http.routers.dashboard.middlewares=dashboard-auth"
+      - "traefik.http.routers.dashboard.tls.certResolver=letsencrypt"
+      - "traefik.http.routers.dashboard.middlewares=dashboard-auth@docker"
       - "traefik.http.middlewares.dashboard-auth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH}"
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/ping"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8082/ping"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -57,59 +60,35 @@ services:
     networks:
       - web
     volumes:
-      - /root/.openclaw/workspace/data:/data
+      - recipe-db:/app/data
+      - recipe-uploads:/app/public/uploads
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=/data/dev.db
+      - DATABASE_URL=/app/data/recipes.db
       - HOSTNAME=0.0.0.0
+    depends_on:
+      traefik:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1:3000/api/recipes"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:3000/api/recipes"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.recipe-app.rule=Host(`${RECIPES_DOMAIN}`) || Host(`www.${RECIPES_DOMAIN}`)"
+      - "traefik.http.routers.recipe-app.rule=Host(`${DOMAIN}`) || Host(`www.${DOMAIN}`)"
       - "traefik.http.routers.recipe-app.entrypoints=websecure"
-      - "traefik.http.routers.recipe-app.tls=true"
       - "traefik.http.routers.recipe-app.tls.certResolver=letsencrypt"
-      - "traefik.http.routers.recipe-app.middlewares=recipe-security-headers,recipe-ratelimit"
-      - "traefik.http.middlewares.recipe-security-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
-      - "traefik.http.middlewares.recipe-ratelimit.ratelimit.average=100"
-      - "traefik.http.middlewares.recipe-ratelimit.ratelimit.burst=50"
-      - "traefik.http.middlewares.recipe-ratelimit.ratelimit.period=1s"
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  landing-site:
-    image: nginx:alpine
-    container_name: landing-site
-    restart: unless-stopped
-    networks:
-      - web
-    volumes:
-      - ./landing/html:/usr/share/nginx/html:ro
-      - ./landing/nginx.conf:/etc/nginx/nginx.conf:ro
-    healthcheck:
-      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1:80/index.html"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.landing.rule=Host(`${DOMAIN}`)"
-      - "traefik.http.routers.landing.entrypoints=websecure"
-      - "traefik.http.routers.landing.tls=true"
-      - "traefik.http.routers.landing.middlewares=landing-security-headers,landing-ratelimit"
-      - "traefik.http.middlewares.landing-security-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
-      - "traefik.http.middlewares.landing-ratelimit.ratelimit.average=50"
-      - "traefik.http.middlewares.landing-ratelimit.ratelimit.burst=25"
-      - "traefik.http.middlewares.landing-ratelimit.ratelimit.period=1s"
+      - "traefik.http.routers.recipe-app.middlewares=security-headers@file,www-redirect@docker,rate-limit@docker"
+      # Redirect www → apex
+      - "traefik.http.middlewares.www-redirect.redirectregex.regex=^https://www\\.(.+)"
+      - "traefik.http.middlewares.www-redirect.redirectregex.replacement=https://$${1}"
+      - "traefik.http.middlewares.www-redirect.redirectregex.permanent=true"
+      # Rate limit
+      - "traefik.http.middlewares.rate-limit.ratelimit.average=100"
+      - "traefik.http.middlewares.rate-limit.ratelimit.burst=50"
+      - "traefik.http.middlewares.rate-limit.ratelimit.period=1s"
     logging:
       driver: json-file
       options:
@@ -120,3 +99,9 @@ networks:
   web:
     driver: bridge
     name: web
+
+volumes:
+  recipe-db:
+  recipe-uploads:
+  traefik-acme:
+  traefik-logs:

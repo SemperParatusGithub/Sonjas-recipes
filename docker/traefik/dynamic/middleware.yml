@@ -1,31 +1,24 @@
-# Traefik config - recipe app is main site
 http:
-  services:
-    recipe-app:
-      loadBalancer:
-        servers:
-          - url: "http://recipe-app:3000"
-
-  routers:
-    # Main site - recipe app
-    main-http:
-      rule: "Host(`sonjas-recipes.com`)"
-      service: recipe-app
-      entryPoints:
-        - web
-
-    main-https:
-      rule: "Host(`sonjas-recipes.com`)"
-      service: recipe-app
-      entryPoints:
-        - websecure
-      tls: {}
-
-tls:
-  certificates:
-    - certFile: /certs/origin-cert.pem
-      keyFile: /certs/origin-key.pem
-
-  options:
-    default:
-      minVersion: VersionTLS12
+  middlewares:
+    security-headers:
+      headers:
+        # Force HTTPS for 1 year, include subdomains
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        # Prevent clickjacking
+        frameDeny: true
+        # Prevent MIME sniffing
+        contentTypeNosniff: true
+        # Basic XSS protection (legacy browsers)
+        browserXssFilter: true
+        # Don't leak referrer to third-party sites
+        referrerPolicy: "strict-origin-when-cross-origin"
+        # Restrict permissions
+        permissionsPolicy: "camera=(), microphone=(), geolocation=()"
+        # Ensure downstream sees HTTPS
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+        customResponseHeaders:
+          X-Powered-By: ""
+          Server: ""

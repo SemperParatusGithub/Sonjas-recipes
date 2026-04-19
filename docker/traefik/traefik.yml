@@ -1,30 +1,40 @@
-# =============================================================================
-# TRAEFIK STATIC CONFIGURATION
-# =============================================================================
-
 global:
-  checkNewVersion: true
+  checkNewVersion: false
   sendAnonymousUsage: false
 
-# Log settings
 log:
   level: INFO
   format: json
   filePath: /var/log/traefik/traefik.json
 
-# API Dashboard
+accessLog:
+  filePath: /var/log/traefik/access.json
+  format: json
+
 api:
   dashboard: true
+  # Dashboard is exposed via Docker labels — never expose it on a public entrypoint
 
-# Entry points
 entryPoints:
   web:
     address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
 
   websecure:
     address: ":443"
+    http:
+      middlewares:
+        - security-headers@file
 
-# Docker provider
+  # Internal-only entrypoint for ping healthchecks — NOT exposed in docker-compose ports
+  traefik:
+    address: ":8082"
+
 providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
@@ -36,23 +46,12 @@ providers:
     directory: /etc/traefik/dynamic
     watch: true
 
-# Let's Encrypt (Production)
 certificatesResolvers:
   letsencrypt:
     acme:
-      email: admin@sonjas-recipes.com
       storage: /letsencrypt/acme.json
       httpChallenge:
         entryPoint: web
-      tlsChallenge: true
 
-# Enable TLS by default
-tls:
-  stores:
-    default:
-      defaultGeneratedCert:
-        resolver: letsencrypt
-
-# Ping
 ping:
-  entryPoint: web
+  entryPoint: traefik

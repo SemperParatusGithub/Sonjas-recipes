@@ -43,3 +43,9 @@ coverage/
 # Logs
 logs/
 *.log
+
+# Docker secrets — never commit these
+docker/.env
+docker/traefik/acme.json
+docker/traefik/certs/
+docker/traefik/logs/
