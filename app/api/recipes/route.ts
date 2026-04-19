@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import db, { parseRecipe } from '@/lib/db';
+import db, { parseRecipe, getAllRecipes } from '@/lib/db';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET() {
+  return NextResponse.json(getAllRecipes());
+}
 
 export async function POST(request: NextRequest) {
   const session = auth(request);
@@ -20,7 +26,7 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString();
 
     db.prepare(`
-      INSERT INTO Recipe (slug, title, description, category, difficulty, prepTimeMin, cookTimeMin, bakeTimeMin, servings, ingredients, steps, tags, imageUrl, tip, createdAt, updatedAt)
+      INSERT INTO Recipe (slug, title, description, category, difficulty, prepTimeMin, cookTimeMin, bakeTimeMin, portions, ingredients, steps, tags, imageUrl, tip, createdAt, updatedAt)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       slug, title, description || null, category, difficulty || null,
